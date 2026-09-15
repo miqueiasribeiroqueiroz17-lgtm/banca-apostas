@@ -3,351 +3,301 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Banca — Controle de Apostas</title>
+<title>Banca de Apostas</title>
 <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Banca%22,%22short_name%22:%22Banca%22,%22display%22:%22standalone%22,%22background_color%22:%22%23F1EFE8%22,%22theme_color%22:%22%23F1EFE8%22}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root{
-    --fundo:#F1EFE8;
+    --fundo:#EDEEF0;
     --fundo-cartao:#FFFFFF;
-    --ouro:#F2B705;
-    --ouro-texto:#B4890A;
-    --azul:#3B82C4;
-    --laranja:#E8743B;
-    --win:#2E8F52;
-    --loss:#D14335;
-    --void:#8A93A6;
-    --roxo:#8B5FBF;
-    --texto:#232838;
-    --texto-2:#767F92;
-    --tinta:#232838;
-    --borda:rgba(30,30,40,0.08);
+    --azul:#0070C0;
+    --preto:#404040;
+    --win:#538135;
+    --loss:#FF0000;
+    --texto:#1A1A1A;
+    --texto-2:#6B7280;
+    --borda:#D9D9D9;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{
     background:var(--fundo);
     color:var(--texto);
-    font-family:'Fraunces', serif;
+    font-family:'Space Mono', monospace;
     min-height:100vh;
     padding-bottom:40px;
   }
-  .mono{font-family:'Space Mono', monospace;}
 
-  .stats-strip{
-    display:grid;
-    grid-template-columns:1fr 1fr 1fr;
-    gap:10px;
-    padding:24px 16px 16px;
-  }
-  .stat{
-    background:var(--fundo-cartao);
-    border-radius:8px;
-    border-left:4px solid var(--void);
-    padding:12px 10px;
-    box-shadow:0 1px 3px rgba(30,30,40,0.08);
-  }
-  .stat-ouro{border-left-color:var(--ouro);}
-  .stat-laranja{border-left-color:var(--laranja);}
-  .stat-win{border-left-color:var(--win);}
-  .stat-loss{border-left-color:var(--loss);}
-  .stat-roxo{border-left-color:var(--roxo);}
-  .stat-rotulo{
-    font-family:'Space Mono', monospace;
-    font-size:10px;
-    letter-spacing:0.05em;
-    color:var(--texto-2);
-    margin-bottom:6px;
-  }
-  .stat-valor{
-    font-size:17px;
-    font-weight:700;
-    line-height:1.15;
-    color:var(--texto);
+  h1{
+    font-size:15px;
+    padding:18px 16px 4px;
+    letter-spacing:0.02em;
   }
 
   .cartao{
     background:var(--fundo-cartao);
-    color:var(--texto);
-    margin:0 16px 16px;
-    border-radius:8px;
-    border-left:4px solid var(--void);
-    position:relative;
-    overflow:hidden;
-    box-shadow:0 1px 3px rgba(30,30,40,0.08);
-  }
-  .cartao-ouro{border-left-color:var(--ouro);}
-  .cartao-azul{border-left-color:var(--azul);}
-  .cartao-verde{border-left-color:var(--win);}
-  .cartao-laranja{border-left-color:var(--laranja);}
-  .cartao-roxo{border-left-color:var(--roxo);}
-  .cartao-interno{padding:18px 18px;}
-
-  .cartao h2{
-    font-size:14px;
-    font-weight:600;
-    text-transform:none;
-    color:var(--texto);
-    margin-bottom:14px;
-    letter-spacing:0.02em;
-  }
-
-  .stake-sugerida{
-    display:flex;
-    justify-content:space-between;
-    align-items:baseline;
-  }
-  .stake-sugerida .valor{
-    font-family:'Space Mono', monospace;
-    font-size:26px;
-    font-weight:700;
-    color:var(--ouro-texto);
-  }
-  .stake-sugerida .pct{
-    font-family:'Space Mono', monospace;
-    font-size:12px;
-    color:var(--texto-2);
-  }
-
-  canvas#grafico{max-height:220px;}
-
-  form#formAposta{display:flex; flex-direction:column; gap:10px;}
-  .linha-dupla{display:flex; gap:10px;}
-  .linha-dupla > *{flex:1;}
-  label{
-    font-family:'Space Mono', monospace;
-    font-size:11px;
-    color:var(--texto-2);
-    display:block;
-    margin-bottom:4px;
-  }
-  input, select{
-    width:100%;
-    font-family:'Space Mono', monospace;
-    font-size:14px;
-    padding:10px 10px;
+    margin:0 16px 14px;
     border:1px solid var(--borda);
     border-radius:4px;
-    background:#FAF9F5;
-    color:var(--tinta);
-  }
-  input:focus, select:focus{
-    outline:none;
-    border-color:var(--azul);
-  }
-  button{
-    font-family:'Fraunces', serif;
-    font-weight:600;
-    font-size:15px;
-    padding:12px;
-    border:none;
-    border-radius:4px;
-    background:var(--win);
-    color:#fff;
-    cursor:pointer;
-    margin-top:4px;
-  }
-  button:active{filter:brightness(0.9);}
-  .btn-verde{background:var(--win); color:#fff;}
-  .btn-laranja{background:var(--laranja); color:#fff;}
-  .btn-azul{background:var(--azul); color:#fff;}
-  .btn-roxo{background:var(--roxo); color:#fff;}
-  .btn-secundario{background:rgba(255,255,255,0.08); color:var(--texto);}
-
-  .tabs{
-    display:flex;
-    gap:6px;
-    padding:20px 16px 0;
-  }
-  .tab-btn{
-    flex:1;
-    background:var(--fundo-cartao);
-    color:var(--texto-2);
-    border:none;
-    border-radius:8px 8px 0 0;
-    padding:12px;
-    font-family:'Space Mono', monospace;
-    font-size:12px;
-    letter-spacing:0.04em;
-    cursor:pointer;
-    border-bottom:3px solid transparent;
-  }
-  .tab-btn.ativa{color:var(--texto); font-weight:700;}
-  .tab-btn.tab-banca.ativa{border-bottom-color:var(--azul);}
-  .tab-btn.tab-ganhos.ativa{border-bottom-color:var(--roxo);}
-  .view{display:none;}
-  .view.ativa{display:block;}
-
-  .config-toggle{
-    font-family:'Space Mono', monospace;
-    font-size:11px;
-    color:var(--texto-2);
-    text-align:right;
-    cursor:pointer;
-    margin-top:10px;
-  }
-
-  .ledger-item{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:12px 10px;
-    margin-bottom:2px;
-    border-radius:4px;
-    border-left:3px solid var(--void);
-    background:rgba(30,30,40,0.03);
-  }
-  .ledger-esq{flex:1; min-width:0;}
-  .ledger-evento{
-    font-size:15px;
-    font-weight:600;
-    white-space:nowrap;
     overflow:hidden;
-    text-overflow:ellipsis;
-    color:var(--texto);
   }
-  .ledger-meta{
-    font-family:'Space Mono', monospace;
+  .cartao-cab{
+    background:var(--azul);
+    color:#fff;
     font-size:11px;
-    color:var(--texto-2);
-    margin-top:2px;
-  }
-  .ledger-dir{
-    text-align:right;
-    font-family:'Space Mono', monospace;
-    font-size:14px;
     font-weight:700;
-    padding-left:10px;
-  }
-  .tag{
-    display:inline-block;
-    font-family:'Space Mono', monospace;
-    font-size:10px;
-    padding:2px 6px;
-    border-radius:3px;
-    margin-left:6px;
-  }
-  .tag-green{background:var(--win); color:#fff;}
-  .tag-red{background:var(--loss); color:#fff;}
-  .tag-void{background:var(--void); color:#fff;}
-  .tag-pend{background:var(--ouro); color:#1B1E28;}
-  .tag-saque{background:var(--laranja); color:#fff;}
-
-  .vazio{
+    letter-spacing:0.04em;
+    text-transform:uppercase;
     text-align:center;
+    padding:9px 6px;
+  }
+  .cartao-corpo{padding:12px;}
+
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:0 16px 14px;}
+  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px; background:var(--borda);}
+  .celula{background:#fff;}
+  .celula .cartao-cab{border-radius:0;}
+  .celula .valor{
+    text-align:center;
+    font-weight:700;
+    font-size:15px;
+    padding:10px 4px;
+  }
+
+  .editar-link{
+    font-size:10px;
+    color:var(--texto-2);
+    text-align:right;
+    padding:4px 16px 0;
+    cursor:pointer;
+  }
+
+  .filtro-grupo{margin-bottom:10px;}
+  .filtro-titulo{font-size:10px; color:var(--texto-2); margin-bottom:4px; letter-spacing:0.03em;}
+  select{
+    width:100%;
     font-family:'Space Mono', monospace;
     font-size:13px;
-    color:var(--texto-2);
-    padding:24px 0;
-  }
-
-  .resultado-botoes{display:flex; gap:8px; margin:6px 0 10px;}
-  .resultado-botoes button{
-    flex:1;
-    font-size:12px;
-    padding:8px;
-    margin-top:0;
-  }
-  .btn-green-mini{background:var(--win);}
-  .btn-red-mini{background:var(--loss);}
-  .btn-void-mini{background:var(--void);}
-
-  .toast{
-    position:fixed;
-    bottom:20px;
-    left:50%;
-    transform:translateX(-50%);
-    background:#232838;
-    color:#fff;
-    padding:10px 18px;
+    padding:9px 8px;
+    border:1px solid var(--borda);
     border-radius:4px;
-    font-family:'Space Mono', monospace;
-    font-size:12px;
-    opacity:0;
-    transition:opacity 0.3s;
-    pointer-events:none;
-    z-index:100;
-    border-left:3px solid var(--azul);
+    background:#fff;
+    color:var(--texto);
   }
-  .toast.show{opacity:1;}
+  .chips{display:flex; flex-wrap:wrap; gap:6px;}
+  .chip{
+    padding:6px 14px;
+    border-radius:3px;
+    font-size:11px;
+    font-weight:700;
+    cursor:pointer;
+    border:2px solid var(--azul);
+    color:var(--azul);
+    background:#fff;
+  }
+  .chip.ativo{background:var(--azul); color:#fff;}
+  .chip.chip-green{border-color:var(--win); color:var(--win);}
+  .chip.chip-green.ativo{background:var(--win); color:#fff;}
+  .chip.chip-red{border-color:var(--loss); color:var(--loss);}
+  .chip.chip-red.ativo{background:var(--loss); color:#fff;}
+
+  .contagem-grid{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--borda);}
+  .contagem-item{
+    background:#fff;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:12px 6px;
+  }
+  .contagem-item .rot{font-size:10px; font-weight:700; color:#fff; padding:4px 10px; border-radius:3px; margin-bottom:6px;}
+  .contagem-item.g .rot{background:var(--win);}
+  .contagem-item.r .rot{background:var(--loss);}
+  .contagem-item .num{font-size:20px; font-weight:700;}
+
+  form{display:flex; flex-direction:column; gap:10px;}
+  .linha-dupla{display:flex; gap:10px;}
+  .linha-dupla > *{flex:1;}
+  label{font-size:10px; color:var(--texto-2); display:block; margin-bottom:4px;}
+  input{
+    width:100%;
+    font-family:'Space Mono', monospace;
+    font-size:13px;
+    padding:9px 8px;
+    border:1px solid var(--borda);
+    border-radius:4px;
+    background:#fff;
+    color:var(--texto);
+  }
+  input:focus, select:focus{outline:none; border-color:var(--azul);}
+  button{
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:13px;
+    padding:11px;
+    border:none;
+    border-radius:4px;
+    background:var(--azul);
+    color:#fff;
+    cursor:pointer;
+  }
+  button:active{filter:brightness(0.9);}
+  .btn-secundario{background:#fff; color:var(--texto); border:1px solid var(--borda);}
+
+  .tabela-wrap{overflow-x:auto;}
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+    min-width:820px;
+  }
+  th{
+    background:var(--preto);
+    color:#fff;
+    padding:8px 8px;
+    text-align:left;
+    white-space:nowrap;
+    border:1px solid #2c2c2c;
+  }
+  td{
+    padding:8px 8px;
+    border:1px solid var(--borda);
+    white-space:nowrap;
+  }
+  tr:nth-child(even) td{background:#FAFAFA;}
+  .resultado-cell{
+    padding:2px 8px;
+    border-radius:3px;
+    color:#fff;
+    font-weight:700;
+    font-size:11px;
+    display:inline-block;
+  }
+  .r-green{background:var(--win);}
+  .r-red{background:var(--loss);}
+  .r-pendente{background:var(--texto-2);}
+  .acao-mini{display:flex; gap:4px;}
+  .acao-mini button{padding:4px 8px; font-size:10px;}
+  .acao-mini .g{background:var(--win);}
+  .acao-mini .r{background:var(--loss);}
 
   .modal-fundo{
     display:none;
     position:fixed; inset:0;
-    background:rgba(0,0,0,0.6);
+    background:rgba(0,0,0,0.5);
     z-index:50;
     align-items:center;
     justify-content:center;
   }
   .modal-fundo.aberto{display:flex;}
   .modal{
-    background:var(--fundo-cartao);
-    color:var(--texto);
-    border-radius:8px;
-    padding:20px;
+    background:#fff;
+    border-radius:4px;
+    padding:18px;
     width:85%;
-    max-width:340px;
-    border-top:4px solid var(--azul);
+    max-width:320px;
   }
-  .modal h2{font-size:16px; margin-bottom:14px; color:var(--texto);}
-  .modal label{margin-top:8px;}
-  .modal-botoes{display:flex; gap:8px; margin-top:16px;}
+  .modal h2{font-size:13px; margin-bottom:12px; color:var(--texto);}
+  .modal-botoes{display:flex; gap:8px; margin-top:14px;}
   .modal-botoes button{flex:1;}
+
+  .toast{
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%);
+    background:var(--texto);
+    color:#fff;
+    padding:10px 18px;
+    border-radius:4px;
+    font-size:12px;
+    opacity:0;
+    transition:opacity 0.3s;
+    pointer-events:none;
+    z-index:100;
+  }
+  .toast.show{opacity:1;}
+
+  .vazio{text-align:center; color:var(--texto-2); font-size:12px; padding:20px;}
 </style>
 </head>
 <body>
 
-<div class="tabs">
-  <button class="tab-btn tab-banca ativa" id="botaoTabBanca" onclick="mudarAba('banca')">Banca</button>
-  <button class="tab-btn tab-ganhos" id="botaoTabGanhos" onclick="mudarAba('ganhos')">Ganhos</button>
-</div>
+<h1>BANCA DE APOSTAS</h1>
 
-<div class="view ativa" id="viewBanca">
-
-<div class="stats-strip">
-  <div class="stat stat-ouro">
-    <div class="stat-rotulo">BANCA ATUAL</div>
-    <div class="stat-valor mono" id="bancaValor">R$ 0,00</div>
+<div class="grid-2">
+  <div class="cartao" style="margin:0;">
+    <div class="cartao-cab">Banca Inicial</div>
+    <div class="celula"><div class="valor" id="bancaInicialValor">R$ 0,00</div></div>
   </div>
-  <div class="stat" id="statLucro">
-    <div class="stat-rotulo">LUCRO</div>
-    <div class="stat-valor mono" id="bancaDelta">R$ 0,00</div>
-  </div>
-  <div class="stat stat-laranja">
-    <div class="stat-rotulo">SACADO</div>
-    <div class="stat-valor mono" id="totalSacado">R$ 0,00</div>
+  <div class="cartao" style="margin:0;">
+    <div class="cartao-cab">Banca Atual</div>
+    <div class="celula"><div class="valor" id="bancaValor">R$ 0,00</div></div>
   </div>
 </div>
+<div class="editar-link" id="abrirConfig">editar banca inicial →</div>
 
-<div class="cartao cartao-ouro">
-  <div class="cartao-interno">
-    <h2>Próxima entrada</h2>
-    <div class="stake-sugerida">
-      <div>
-        <div class="valor mono" id="stakeSugerida">R$ 0,00</div>
+<div class="cartao">
+  <div class="cartao-cab">Filtros</div>
+  <div class="cartao-corpo">
+    <div class="filtro-grupo">
+      <div class="filtro-titulo">ANO</div>
+      <select id="filtroAno"><option value="">Todos</option></select>
+    </div>
+    <div class="filtro-grupo">
+      <div class="filtro-titulo">MÊS</div>
+      <select id="filtroMes">
+        <option value="">Todos</option>
+        <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+        <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+        <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+        <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+      </select>
+    </div>
+    <div class="filtro-grupo">
+      <div class="filtro-titulo">RESULTADO</div>
+      <div class="chips">
+        <div class="chip chip-green ativo" data-resultado="green" onclick="alternarChip('green', this)">GREEN</div>
+        <div class="chip chip-red ativo" data-resultado="red" onclick="alternarChip('red', this)">RED</div>
+        <div class="chip ativo" data-resultado="pendente" onclick="alternarChip('pendente', this)">ABERTA</div>
       </div>
-      <div class="pct" id="stakePct">2% da banca</div>
     </div>
   </div>
-  <div class="config-toggle" id="abrirConfig">ajustar % de stake e banca inicial →</div>
 </div>
 
-<div class="cartao cartao-azul">
-  <div class="cartao-interno">
-    <h2>Evolução da banca</h2>
-    <canvas id="grafico"></canvas>
+<div class="cartao">
+  <div class="cartao-cab">Total</div>
+  <div class="grid-3">
+    <div class="celula">
+      <div class="cartao-cab" style="background:#fff; color:var(--texto-2); font-size:9px;">VALOR APOSTADO</div>
+      <div class="valor" id="totalApostado">R$ 0,00</div>
+    </div>
+    <div class="celula">
+      <div class="cartao-cab" style="background:#fff; color:var(--texto-2); font-size:9px;">RETORNO BRUTO</div>
+      <div class="valor" id="totalBruto">R$ 0,00</div>
+    </div>
+    <div class="celula">
+      <div class="cartao-cab" style="background:#fff; color:var(--texto-2); font-size:9px;">RETORNO LÍQUIDO</div>
+      <div class="valor" id="totalLiquido">R$ 0,00</div>
+    </div>
   </div>
 </div>
 
-<div class="cartao cartao-verde">
-  <div class="cartao-interno">
-    <h2>Registrar aposta</h2>
+<div class="cartao">
+  <div class="cartao-cab">Contagem</div>
+  <div class="contagem-grid">
+    <div class="contagem-item g"><div class="rot">GREEN</div><div class="num" id="contagemGreen">0</div></div>
+    <div class="contagem-item r"><div class="rot">RED</div><div class="num" id="contagemRed">0</div></div>
+  </div>
+</div>
+
+<div class="cartao">
+  <div class="cartao-cab">Registrar aposta</div>
+  <div class="cartao-corpo">
     <form id="formAposta">
       <div>
-        <label>Evento / seleção</label>
+        <label>Descrição</label>
         <input type="text" id="campoEvento" placeholder="Ex: Flamengo -1.5 asiático" required>
       </div>
       <div class="linha-dupla">
@@ -356,102 +306,60 @@
           <input type="number" step="0.01" min="1.01" id="campoOdd" placeholder="1.85" required>
         </div>
         <div>
-          <label>Stake (R$)</label>
+          <label>Valor apostado (R$)</label>
           <input type="number" step="0.01" min="0.01" id="campoStake" required>
         </div>
       </div>
-      <div>
-        <label>Data</label>
-        <input type="date" id="campoData" required>
-      </div>
-      <button type="submit" class="btn-verde">Adicionar ao registro</button>
-    </form>
-  </div>
-</div>
-
-<div class="cartao cartao-laranja">
-  <div class="cartao-interno">
-    <h2>Retirar da banca</h2>
-    <form id="formSaque">
       <div class="linha-dupla">
         <div>
-          <label>Valor (R$)</label>
-          <input type="number" step="0.01" min="0.01" id="campoSaqueValor" required>
+          <label>Data</label>
+          <input type="date" id="campoData" required>
         </div>
         <div>
-          <label>Data</label>
-          <input type="date" id="campoSaqueData" required>
+          <label>Resultado</label>
+          <select id="campoResultado">
+            <option value="pendente">Aberta (definir depois)</option>
+            <option value="green">Green</option>
+            <option value="red">Red</option>
+          </select>
         </div>
       </div>
       <div>
-        <label>Motivo (opcional)</label>
-        <input type="text" id="campoSaqueMotivo" placeholder="Ex: uso pessoal">
+        <label>Observação (opcional)</label>
+        <input type="text" id="campoObservacao" placeholder="Ex: cash-out parcial">
       </div>
-      <button type="submit" class="btn-laranja">Registrar saque</button>
+      <button type="submit">Adicionar ao registro</button>
     </form>
   </div>
 </div>
 
 <div class="cartao">
-  <div class="cartao-interno">
-    <h2>Registro</h2>
-    <div id="listaApostas"><div class="vazio">Nenhuma aposta ainda.</div></div>
+  <div class="cartao-cab">Registro</div>
+  <div class="cartao-corpo" style="padding:0;">
+    <div class="tabela-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th><th>Mês</th><th>Ano</th><th>Descrição</th><th>Odd</th><th>Valor Apostado</th><th>Resultado</th>
+            <th>Retorno Bruto</th><th>Retorno Líquido</th><th>Banca Atual</th><th>Observação</th><th>Ação</th>
+          </tr>
+        </thead>
+        <tbody id="corpoTabelaRegistro">
+          <tr><td colspan="12" class="vazio">Nenhuma aposta ainda.</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
-</div>
-
-</div>
-
-<div class="view" id="viewGanhos">
-
-<div class="stats-strip" style="grid-template-columns:1fr;">
-  <div class="stat stat-roxo">
-    <div class="stat-rotulo">SALDO DE GANHOS</div>
-    <div class="stat-valor mono" id="saldoGanhos" style="font-size:28px;">R$ 0,00</div>
-  </div>
-</div>
-
-<div class="cartao cartao-roxo">
-  <div class="cartao-interno">
-    <h2>O que fiz com esse dinheiro</h2>
-    <form id="formGasto">
-      <div>
-        <label>Descrição</label>
-        <input type="text" id="campoGastoDescricao" placeholder="Ex: conta de internet" required>
-      </div>
-      <div class="linha-dupla">
-        <div>
-          <label>Valor (R$)</label>
-          <input type="number" step="0.01" min="0.01" id="campoGastoValor" required>
-        </div>
-        <div>
-          <label>Data</label>
-          <input type="date" id="campoGastoData" required>
-        </div>
-      </div>
-      <button type="submit" class="btn-roxo">Registrar gasto</button>
-    </form>
-  </div>
-</div>
-
-<div class="cartao">
-  <div class="cartao-interno">
-    <h2>Histórico de ganhos</h2>
-    <div id="listaGanhos"><div class="vazio">Nenhuma retirada ainda.</div></div>
-  </div>
-</div>
-
 </div>
 
 <div class="modal-fundo" id="modalConfig">
   <div class="modal">
-    <h2>Configurações da banca</h2>
+    <h2>Editar banca inicial</h2>
     <label>Banca inicial (R$)</label>
     <input type="number" step="0.01" id="cfgBancaInicial">
-    <label>% de stake padrão por aposta</label>
-    <input type="number" step="0.1" id="cfgStakePct">
     <div class="modal-botoes">
       <button class="btn-secundario" id="cancelarConfig">Cancelar</button>
-      <button class="btn-azul" id="salvarConfig">Salvar</button>
+      <button id="salvarConfig">Salvar</button>
     </div>
   </div>
 </div>
@@ -460,7 +368,6 @@
 
 <script>
 // ======= CONFIGURAÇÃO DO FIREBASE =======
-// Substitua pelo config do seu projeto Firebase (mesmo padrão dos outros apps).
 const firebaseConfig = {
   apiKey: "AIzaSyCdKUiJS3XCqWl1vULzaVWj5Vn62aa_3lE",
   authDomain: "banca-apostas-1d69a.firebaseapp.com",
@@ -472,17 +379,12 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Coleções: uma única "config" (doc "geral") e "apostas" (uma por entrada)
 const configRef = db.collection('config').doc('geral');
 const apostasRef = db.collection('apostas');
-const saquesRef = db.collection('saques');
-const gastosGanhosRef = db.collection('gastosGanhos');
 
-let config = { bancaInicial: 1000, stakePct: 2 };
+let config = { bancaInicial: 1000 };
 let apostas = [];
-let saques = [];
-let gastosGanhos = [];
-let grafico = null;
+let filtroResultados = new Set(['green','red','pendente']);
 
 function formatarMoeda(v){
   return v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
@@ -495,195 +397,121 @@ function mostrarToast(msg){
   setTimeout(()=>t.classList.remove('show'), 2200);
 }
 
-function calcularLucro(aposta){
-  if(aposta.resultado === 'green') return aposta.stake * (aposta.odd - 1);
-  if(aposta.resultado === 'red') return -aposta.stake;
-  return 0; // void ou pendente não afeta a banca
+// RETORNO BRUTO: espelha a fórmula da planilha
+// =IF(G="GREEN", stake*odd, IF(G="RED", -stake, 0))
+function retornoBruto(a){
+  if(a.resultado === 'green') return a.stake * a.odd;
+  if(a.resultado === 'red') return -a.stake;
+  return 0;
+}
+
+// RETORNO LIQUIDO: espelha =IF(bruto<0, bruto, bruto-stake)
+function retornoLiquido(a){
+  const bruto = retornoBruto(a);
+  if(a.resultado === 'pendente') return 0;
+  return bruto < 0 ? bruto : bruto - a.stake;
 }
 
 function bancaAtual(){
-  const totalLucro = apostas.reduce((soma, a) => soma + calcularLucro(a), 0);
-  const totalSaques = saques.reduce((soma, s) => soma + s.valor, 0);
-  return config.bancaInicial + totalLucro - totalSaques;
+  const totalLiquido = apostas.reduce((s,a) => s + retornoLiquido(a), 0);
+  return config.bancaInicial + totalLiquido;
+}
+
+function apostasComAcumulado(){
+  const ordenadas = [...apostas].sort((a,b) => a.data.localeCompare(b.data) || (a.criadoEm||0) - (b.criadoEm||0));
+  let acumulado = config.bancaInicial;
+  return ordenadas.map(a => {
+    acumulado += retornoLiquido(a);
+    return { ...a, bancaAcumulada: acumulado };
+  });
+}
+
+function popularFiltroAno(){
+  const select = document.getElementById('filtroAno');
+  const atual = select.value;
+  const anos = [...new Set(apostas.map(a => a.data.slice(0,4)))].sort();
+  select.innerHTML = '<option value="">Todos</option>' + anos.map(ano => `<option value="${ano}">${ano}</option>`).join('');
+  if(anos.includes(atual)) select.value = atual;
+}
+
+function alternarChip(resultado, el){
+  if(filtroResultados.has(resultado)){
+    filtroResultados.delete(resultado);
+    el.classList.remove('ativo');
+  } else {
+    filtroResultados.add(resultado);
+    el.classList.add('ativo');
+  }
+  renderizarResumoETabela();
+}
+
+function apostasFiltradas(){
+  const ano = document.getElementById('filtroAno').value;
+  const mes = document.getElementById('filtroMes').value;
+  return apostasComAcumulado().filter(a => {
+    if(ano && a.data.slice(0,4) !== ano) return false;
+    if(mes && String(parseInt(a.data.slice(5,7),10)) !== mes) return false;
+    if(!filtroResultados.has(a.resultado)) return false;
+    return true;
+  });
 }
 
 function renderizarTopo(){
-  const banca = bancaAtual();
-  document.getElementById('bancaValor').textContent = formatarMoeda(banca);
-
-  const totalLucro = apostas.reduce((soma, a) => soma + calcularLucro(a), 0);
-  const totalSaques = saques.reduce((soma, s) => soma + s.valor, 0);
-
-  const deltaEl = document.getElementById('bancaDelta');
-  const sinal = totalLucro >= 0 ? '+' : '';
-  deltaEl.textContent = `${sinal}${formatarMoeda(totalLucro)}`;
-  document.getElementById('statLucro').className = 'stat ' + (totalLucro >= 0 ? 'stat-win' : 'stat-loss');
-
-  document.getElementById('totalSacado').textContent = formatarMoeda(totalSaques);
-
-  const stakeSugerida = banca * (config.stakePct / 100);
-  document.getElementById('stakeSugerida').textContent = formatarMoeda(stakeSugerida);
-  document.getElementById('stakePct').textContent = `${config.stakePct}% da banca`;
-  document.getElementById('campoStake').value = stakeSugerida.toFixed(2);
+  document.getElementById('bancaInicialValor').textContent = formatarMoeda(config.bancaInicial);
+  document.getElementById('bancaValor').textContent = formatarMoeda(bancaAtual());
 }
 
-function renderizarGrafico(){
-  const eventosApostas = apostas
-    .filter(a => a.resultado === 'green' || a.resultado === 'red')
-    .map(a => ({ data: a.data, delta: calcularLucro(a) }));
-  const eventosSaques = saques.map(s => ({ data: s.data, delta: -s.valor }));
-  const linhaDoTempo = [...eventosApostas, ...eventosSaques].sort((a,b) => a.data.localeCompare(b.data));
+function renderizarResumoETabela(){
+  popularFiltroAno();
+  const filtradas = apostasFiltradas();
 
-  let acumulado = config.bancaInicial;
-  const labels = ['início'];
-  const valores = [acumulado];
-  linhaDoTempo.forEach(evt => {
-    acumulado += evt.delta;
-    labels.push(evt.data.slice(5)); // MM-DD
-    valores.push(acumulado);
-  });
+  const totalApostado = filtradas.reduce((s,a) => s + a.stake, 0);
+  const totalBruto = filtradas.reduce((s,a) => s + retornoBruto(a), 0);
+  const totalLiquido = filtradas.reduce((s,a) => s + retornoLiquido(a), 0);
+  document.getElementById('totalApostado').textContent = formatarMoeda(totalApostado);
+  document.getElementById('totalBruto').textContent = formatarMoeda(totalBruto);
+  document.getElementById('totalLiquido').textContent = formatarMoeda(totalLiquido);
+  document.getElementById('contagemGreen').textContent = filtradas.filter(a => a.resultado === 'green').length;
+  document.getElementById('contagemRed').textContent = filtradas.filter(a => a.resultado === 'red').length;
 
-  const ctx = document.getElementById('grafico').getContext('2d');
-  if(grafico) grafico.destroy();
-  grafico = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        data: valores,
-        borderColor: '#F2B705',
-        backgroundColor: 'rgba(242,183,5,0.12)',
-        borderWidth: 2,
-        pointRadius: 0,
-        tension: 0.15,
-        fill: true
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color:'#767F92', font: { family:'Space Mono', size:9 }, maxRotation:0 }, grid: { display:false } },
-        y: { ticks: { color:'#767F92', font: { family:'Space Mono', size:9 }, callback: v => 'R$'+v }, grid: { color:'rgba(30,30,40,0.06)' } }
-      }
-    }
-  });
-}
-
-function renderizarLista(){
-  const container = document.getElementById('listaApostas');
-  const itens = [
-    ...apostas.map(a => ({ tipo:'aposta', data:a.data, criadoEm:a.criadoEm, ref:a })),
-    ...saques.map(s => ({ tipo:'saque', data:s.data, criadoEm:s.criadoEm, ref:s }))
-  ];
-  if(itens.length === 0){
-    container.innerHTML = '<div class="vazio">Nenhum registro ainda.</div>';
+  const corpo = document.getElementById('corpoTabelaRegistro');
+  if(filtradas.length === 0){
+    corpo.innerHTML = '<tr><td colspan="12" class="vazio">Nenhuma aposta encontrada.</td></tr>';
     return;
   }
-  const ordenados = itens.sort((x,y) => y.data.localeCompare(x.data) || (y.criadoEm||0) - (x.criadoEm||0));
-  container.innerHTML = ordenados.map(item => {
-    if(item.tipo === 'saque'){
-      const s = item.ref;
-      const dataFmt = s.data.split('-').reverse().join('/');
-      return `
-        <div class="ledger-item" style="border-left-color:var(--laranja)">
-          <div class="ledger-esq">
-            <div class="ledger-evento">Saque${s.motivo ? ' — ' + s.motivo : ''}</div>
-            <div class="ledger-meta">${dataFmt}
-              <span class="tag tag-saque">SAQUE</span>
-            </div>
-          </div>
-          <div class="ledger-dir" style="color:var(--laranja)">-${formatarMoeda(s.valor)}</div>
-        </div>
-      `;
-    }
-    const a = item.ref;
-    const lucro = calcularLucro(a);
-    const corBorda = { green:'var(--win)', red:'var(--loss)', void:'var(--void)', pendente:'var(--ouro)' }[a.resultado];
-    const corLucro = a.resultado === 'green' ? 'color:var(--win)' : a.resultado === 'red' ? 'color:var(--loss)' : 'color:var(--texto-2)';
-    const tagClasse = { green:'tag-green', red:'tag-red', void:'tag-void', pendente:'tag-pend' }[a.resultado];
-    const tagTexto = { green:'GREEN', red:'RED', void:'VOID', pendente:'ABERTA' }[a.resultado];
-    const dataFmt = a.data.split('-').reverse().join('/');
+  corpo.innerHTML = filtradas.map(a => {
+    const [ano, mes, dia] = a.data.split('-');
+    const dataFmt = `${dia}/${mes}/${ano}`;
+    const bruto = retornoBruto(a);
+    const liquido = retornoLiquido(a);
+    const rotulo = { green:'GREEN', red:'RED', pendente:'ABERTA' }[a.resultado];
+    const acao = a.resultado === 'pendente' ? `
+      <div class="acao-mini">
+        <button class="g" onclick="marcarResultado('${a.id}','green')">Green</button>
+        <button class="r" onclick="marcarResultado('${a.id}','red')">Red</button>
+      </div>` : '—';
     return `
-      <div class="ledger-item" style="border-left-color:${corBorda}">
-        <div class="ledger-esq">
-          <div class="ledger-evento">${a.evento}</div>
-          <div class="ledger-meta">${dataFmt} · odd ${a.odd.toFixed(2)} · stake ${formatarMoeda(a.stake)}
-            <span class="tag ${tagClasse}">${tagTexto}</span>
-          </div>
-        </div>
-        <div class="ledger-dir" style="${corLucro}">
-          ${a.resultado === 'pendente' ? '—' : (lucro >= 0 ? '+' : '') + formatarMoeda(lucro)}
-        </div>
-      </div>
-      ${a.resultado === 'pendente' ? `
-      <div class="resultado-botoes">
-        <button class="btn-green-mini" onclick="marcarResultado('${a.id}','green')">Green</button>
-        <button class="btn-red-mini" onclick="marcarResultado('${a.id}','red')">Red</button>
-        <button class="btn-void-mini" onclick="marcarResultado('${a.id}','void')">Void</button>
-      </div>` : ''}
-    `;
-  }).join('');
-}
-
-function saldoGanhosAtual(){
-  const totalSaques = saques.reduce((soma, s) => soma + s.valor, 0);
-  const totalGastos = gastosGanhos.reduce((soma, g) => soma + g.valor, 0);
-  return totalSaques - totalGastos;
-}
-
-function renderizarGanhos(){
-  document.getElementById('saldoGanhos').textContent = formatarMoeda(saldoGanhosAtual());
-
-  const itens = [
-    ...saques.map(s => ({ tipo:'entrada', data:s.data, criadoEm:s.criadoEm, ref:s })),
-    ...gastosGanhos.map(g => ({ tipo:'gasto', data:g.data, criadoEm:g.criadoEm, ref:g }))
-  ];
-  const container = document.getElementById('listaGanhos');
-  if(itens.length === 0){
-    container.innerHTML = '<div class="vazio">Nenhuma retirada ainda.</div>';
-    return;
-  }
-  const ordenados = itens.sort((x,y) => y.data.localeCompare(x.data) || (y.criadoEm||0) - (x.criadoEm||0));
-  container.innerHTML = ordenados.map(item => {
-    const dataFmt = item.data.split('-').reverse().join('/');
-    if(item.tipo === 'entrada'){
-      const s = item.ref;
-      return `
-        <div class="ledger-item" style="border-left-color:var(--laranja)">
-          <div class="ledger-esq">
-            <div class="ledger-evento">Retirada da banca${s.motivo ? ' — ' + s.motivo : ''}</div>
-            <div class="ledger-meta">${dataFmt} <span class="tag tag-saque">ENTRADA</span></div>
-          </div>
-          <div class="ledger-dir" style="color:var(--laranja)">+${formatarMoeda(s.valor)}</div>
-        </div>
-      `;
-    }
-    const g = item.ref;
-    return `
-      <div class="ledger-item" style="border-left-color:var(--roxo)">
-        <div class="ledger-esq">
-          <div class="ledger-evento">${g.descricao}</div>
-          <div class="ledger-meta">${dataFmt} <span class="tag" style="background:var(--roxo); color:#fff;">GASTO</span></div>
-        </div>
-        <div class="ledger-dir" style="color:var(--roxo)">-${formatarMoeda(g.valor)}</div>
-      </div>
+      <tr>
+        <td>${dataFmt}</td>
+        <td>${parseInt(mes,10)}</td>
+        <td>${ano}</td>
+        <td>${a.evento}</td>
+        <td>${a.odd.toFixed(2)}</td>
+        <td>${formatarMoeda(a.stake)}</td>
+        <td><span class="resultado-cell r-${a.resultado}">${rotulo}</span></td>
+        <td>${a.resultado === 'pendente' ? '—' : formatarMoeda(bruto)}</td>
+        <td>${a.resultado === 'pendente' ? '—' : formatarMoeda(liquido)}</td>
+        <td>${formatarMoeda(a.bancaAcumulada)}</td>
+        <td>${a.observacao || '—'}</td>
+        <td>${acao}</td>
+      </tr>
     `;
   }).join('');
 }
 
 function renderizarTudo(){
   renderizarTopo();
-  renderizarGrafico();
-  renderizarLista();
-  renderizarGanhos();
-}
-
-function mudarAba(nome){
-  document.getElementById('viewBanca').classList.toggle('ativa', nome === 'banca');
-  document.getElementById('viewGanhos').classList.toggle('ativa', nome === 'ganhos');
-  document.getElementById('botaoTabBanca').classList.toggle('ativa', nome === 'banca');
-  document.getElementById('botaoTabGanhos').classList.toggle('ativa', nome === 'ganhos');
+  renderizarResumoETabela();
 }
 
 async function marcarResultado(id, resultado){
@@ -691,7 +519,6 @@ async function marcarResultado(id, resultado){
   mostrarToast('Resultado atualizado');
 }
 
-// Formulário de nova aposta
 document.getElementById('formAposta').addEventListener('submit', async (e) => {
   e.preventDefault();
   const nova = {
@@ -699,7 +526,8 @@ document.getElementById('formAposta').addEventListener('submit', async (e) => {
     odd: parseFloat(document.getElementById('campoOdd').value),
     stake: parseFloat(document.getElementById('campoStake').value),
     data: document.getElementById('campoData').value,
-    resultado: 'pendente',
+    resultado: document.getElementById('campoResultado').value,
+    observacao: document.getElementById('campoObservacao').value.trim(),
     criadoEm: Date.now()
   };
   try{
@@ -713,50 +541,9 @@ document.getElementById('formAposta').addEventListener('submit', async (e) => {
   }
 });
 
-// Formulário de saque
-document.getElementById('formSaque').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const novoSaque = {
-    valor: parseFloat(document.getElementById('campoSaqueValor').value),
-    data: document.getElementById('campoSaqueData').value,
-    motivo: document.getElementById('campoSaqueMotivo').value.trim(),
-    criadoEm: Date.now()
-  };
-  try{
-    await saquesRef.add(novoSaque);
-    e.target.reset();
-    document.getElementById('campoSaqueData').value = new Date().toISOString().slice(0,10);
-    mostrarToast('Saque registrado');
-  }catch(err){
-    mostrarToast('Erro ao salvar. Tente de novo.');
-    console.error(err);
-  }
-});
-
-// Formulário de gasto (aba Ganhos)
-document.getElementById('formGasto').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const novoGasto = {
-    descricao: document.getElementById('campoGastoDescricao').value.trim(),
-    valor: parseFloat(document.getElementById('campoGastoValor').value),
-    data: document.getElementById('campoGastoData').value,
-    criadoEm: Date.now()
-  };
-  try{
-    await gastosGanhosRef.add(novoGasto);
-    e.target.reset();
-    document.getElementById('campoGastoData').value = new Date().toISOString().slice(0,10);
-    mostrarToast('Gasto registrado');
-  }catch(err){
-    mostrarToast('Erro ao salvar. Tente de novo.');
-    console.error(err);
-  }
-});
-
-// Configurações
+// Configurações (banca inicial)
 document.getElementById('abrirConfig').addEventListener('click', () => {
   document.getElementById('cfgBancaInicial').value = config.bancaInicial;
-  document.getElementById('cfgStakePct').value = config.stakePct;
   document.getElementById('modalConfig').classList.add('aberto');
 });
 document.getElementById('cancelarConfig').addEventListener('click', () => {
@@ -764,13 +551,12 @@ document.getElementById('cancelarConfig').addEventListener('click', () => {
 });
 document.getElementById('salvarConfig').addEventListener('click', async () => {
   const bancaInicial = parseFloat(document.getElementById('cfgBancaInicial').value);
-  const stakePct = parseFloat(document.getElementById('cfgStakePct').value);
-  if(isNaN(bancaInicial) || isNaN(stakePct)){
-    mostrarToast('Preencha os dois campos');
+  if(isNaN(bancaInicial)){
+    mostrarToast('Preencha o valor da banca inicial');
     return;
   }
   try{
-    await configRef.set({ bancaInicial, stakePct });
+    await configRef.set({ bancaInicial });
     document.getElementById('modalConfig').classList.remove('aberto');
     mostrarToast('Configurações salvas');
   }catch(err){
@@ -781,20 +567,22 @@ document.getElementById('salvarConfig').addEventListener('click', async () => {
 
 // Data padrão = hoje
 document.getElementById('campoData').value = new Date().toISOString().slice(0,10);
-document.getElementById('campoSaqueData').value = new Date().toISOString().slice(0,10);
-document.getElementById('campoGastoData').value = new Date().toISOString().slice(0,10);
+
+// Filtros de Ano/Mês
+document.getElementById('filtroAno').addEventListener('change', renderizarResumoETabela);
+document.getElementById('filtroMes').addEventListener('change', renderizarResumoETabela);
 
 // Listeners em tempo real
 configRef.onSnapshot((doc) => {
   if(doc.exists){
     config = doc.data();
   } else {
-    configRef.set(config); // cria config padrão na primeira vez
+    configRef.set(config);
   }
   renderizarTudo();
 }, (err) => {
   console.error(err);
-  mostrarToast('Erro ao conectar ao Firebase — confira o config no código');
+  mostrarToast('Erro ao conectar ao Firebase');
 });
 
 apostasRef.onSnapshot((snapshot) => {
@@ -802,21 +590,8 @@ apostasRef.onSnapshot((snapshot) => {
   renderizarTudo();
 }, (err) => console.error(err));
 
-saquesRef.onSnapshot((snapshot) => {
-  saques = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-  renderizarTudo();
-}, (err) => console.error(err));
-
-gastosGanhosRef.onSnapshot((snapshot) => {
-  gastosGanhos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-  renderizarTudo();
-}, (err) => console.error(err));
-
-// Registro do service worker (PWA básico, opcional)
 if('serviceWorker' in navigator){
-  const swCode = `
-    self.addEventListener('fetch', e => {});
-  `;
+  const swCode = `self.addEventListener('fetch', e => {});`;
   const blob = new Blob([swCode], {type:'application/javascript'});
   navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
 }
