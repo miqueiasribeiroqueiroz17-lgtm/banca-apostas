@@ -187,6 +187,7 @@
   .acao-mini button{padding:4px 8px; font-size:10px;}
   .acao-mini .g{background:var(--win);}
   .acao-mini .r{background:var(--loss);}
+  .acao-mini .e{background:var(--texto-2);}
 
   .modal-fundo{
     display:none;
@@ -370,6 +371,46 @@
   </div>
 </div>
 
+<div class="modal-fundo" id="modalEditar">
+  <div class="modal" style="max-width:360px;">
+    <h2>Editar aposta</h2>
+    <input type="hidden" id="editId">
+    <label>Descrição</label>
+    <input type="text" id="editEvento">
+    <div class="linha-dupla" style="margin-top:10px;">
+      <div>
+        <label>Odd</label>
+        <input type="number" step="0.01" min="1.01" id="editOdd">
+      </div>
+      <div>
+        <label>Valor apostado (R$)</label>
+        <input type="number" step="0.01" min="0.01" id="editStake">
+      </div>
+    </div>
+    <div class="linha-dupla" style="margin-top:10px;">
+      <div>
+        <label>Data</label>
+        <input type="date" id="editData">
+      </div>
+      <div>
+        <label>Resultado</label>
+        <select id="editResultado">
+          <option value="pendente">Aberta</option>
+          <option value="green">Green</option>
+          <option value="red">Red</option>
+        </select>
+      </div>
+    </div>
+    <label style="margin-top:10px;">Observação</label>
+    <input type="text" id="editObservacao">
+    <div class="modal-botoes">
+      <button class="btn-secundario" id="excluirEdicao" style="color:var(--loss); border-color:var(--loss);">Excluir</button>
+      <button class="btn-secundario" id="cancelarEdicao">Cancelar</button>
+      <button id="salvarEdicao">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -491,11 +532,14 @@ function renderizarResumoETabela(){
     const bruto = retornoBruto(a);
     const liquido = retornoLiquido(a);
     const rotulo = { green:'GREEN', red:'RED', pendente:'ABERTA' }[a.resultado];
-    const acao = a.resultado === 'pendente' ? `
-      <div class="acao-mini">
+    const acaoResultado = a.resultado === 'pendente' ? `
         <button class="g" onclick="marcarResultado('${a.id}','green')">Green</button>
-        <button class="r" onclick="marcarResultado('${a.id}','red')">Red</button>
-      </div>` : '—';
+        <button class="r" onclick="marcarResultado('${a.id}','red')">Red</button>` : '';
+    const acao = `
+      <div class="acao-mini">
+        ${acaoResultado}
+        <button class="e" onclick="abrirEdicao('${a.id}')">Editar</button>
+      </div>`;
     return `
       <tr>
         <td>${dataFmt}</td>
@@ -524,6 +568,60 @@ async function marcarResultado(id, resultado){
   await apostasRef.doc(id).update({ resultado });
   mostrarToast('Resultado atualizado');
 }
+
+function abrirEdicao(id){
+  const a = apostas.find(x => x.id === id);
+  if(!a) return;
+  document.getElementById('editId').value = a.id;
+  document.getElementById('editEvento').value = a.evento;
+  document.getElementById('editOdd').value = a.odd;
+  document.getElementById('editStake').value = a.stake;
+  document.getElementById('editData').value = a.data;
+  document.getElementById('editResultado').value = a.resultado;
+  document.getElementById('editObservacao').value = a.observacao || '';
+  document.getElementById('modalEditar').classList.add('aberto');
+}
+
+document.getElementById('cancelarEdicao').addEventListener('click', () => {
+  document.getElementById('modalEditar').classList.remove('aberto');
+});
+
+document.getElementById('salvarEdicao').addEventListener('click', async () => {
+  const id = document.getElementById('editId').value;
+  const atualizado = {
+    evento: document.getElementById('editEvento').value.trim(),
+    odd: parseFloat(document.getElementById('editOdd').value),
+    stake: parseFloat(document.getElementById('editStake').value),
+    data: document.getElementById('editData').value,
+    resultado: document.getElementById('editResultado').value,
+    observacao: document.getElementById('editObservacao').value.trim()
+  };
+  if(!atualizado.evento || isNaN(atualizado.odd) || isNaN(atualizado.stake) || !atualizado.data){
+    mostrarToast('Preencha os campos obrigatórios');
+    return;
+  }
+  try{
+    await apostasRef.doc(id).update(atualizado);
+    document.getElementById('modalEditar').classList.remove('aberto');
+    mostrarToast('Aposta atualizada');
+  }catch(err){
+    mostrarToast('Erro ao salvar. Tente de novo.');
+    console.error(err);
+  }
+});
+
+document.getElementById('excluirEdicao').addEventListener('click', async () => {
+  const id = document.getElementById('editId').value;
+  if(!confirm('Excluir essa aposta do registro?')) return;
+  try{
+    await apostasRef.doc(id).delete();
+    document.getElementById('modalEditar').classList.remove('aberto');
+    mostrarToast('Aposta excluída');
+  }catch(err){
+    mostrarToast('Erro ao excluir. Tente de novo.');
+    console.error(err);
+  }
+});
 
 document.getElementById('formAposta').addEventListener('submit', async (e) => {
   e.preventDefault();
