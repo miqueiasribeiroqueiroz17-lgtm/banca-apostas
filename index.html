@@ -4,7 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Banca de Apostas</title>
-<link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Banca%22,%22short_name%22:%22Banca%22,%22display%22:%22standalone%22,%22background_color%22:%22%23F1EFE8%22,%22theme_color%22:%22%23F1EFE8%22}">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0070C0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Banca">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -591,9 +597,7 @@ apostasRef.onSnapshot((snapshot) => {
 }, (err) => console.error(err));
 
 if('serviceWorker' in navigator){
-  const swCode = `self.addEventListener('fetch', e => {});`;
-  const blob = new Blob([swCode], {type:'application/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 </script>
 </body>
